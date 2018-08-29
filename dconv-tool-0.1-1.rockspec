@@ -1,4 +1,4 @@
-package = "lua-deps"
+package = "dconv-tool"
 version = "0.1-1"
 source = {
   url    = "git://github.com/haianos/dconv-tool",
@@ -23,12 +23,12 @@ dependencies = {
 build = {
   type = "builtin",
   modules = {
-    asn1runtime      = "src/asn1runtime.lua",
-    location         = "src/location.lua",
-    dproto-conv-gen  = "src/dproto-conv-gen.lua",
-    ['parser/asn1']  = "src/parser/asn1.lua",
-    ['parser/eigen'] = "src/parser/eigen.lua",
-    ['parser/dproto']= "src/parser/dproto.lua"
+    asn1runtime          = "src/asn1runtime.lua",
+    location             = "src/location.lua",
+    ['dproto-conv-gen']  = "src/dproto-conv-gen.lua",
+    ['parser/asn1']      = "src/parser/asn1.lua",
+    ['parser/eigen']     = "src/parser/eigen.lua",
+    ['parser/dproto']    = "src/parser/dproto.lua"
   }
 }
 
