@@ -1,0 +1,212 @@
+// DPROTO MODULE DEFINITIONS FOR TEST1
+// Author: Enea Scioni, <enea.scioni@kuleuven.be>
+// 2018, KU Leuven, Belgium
+
+// -- Algebraic definitions --
+
+// --  -- Positions -- --
+algebraic position2 :: Vector{2}
+algebraic position3 :: Vector{3}
+algebraic position3_named :: Scalar{x,y,z}
+
+// --  -- Orientation -- --
+
+algebraic quat :: Vector{4}
+algebraic quat_named :: Scalar{x,y,z,w}
+algebraic orient_rot_mx :: Matrix{3,3}
+algebraic orient_rot_named :: Scalar{Xx,Xy,Xz,Yx,Yy,Yz,Zx,Zy,Zz}
+// -- -- Pose -- --
+algebraic ht_matrix :: Matrix{4,4}
+
+dproto Base_Position :: geometric {
+  semantic  = Position
+  coord     = cartesian
+  algebraic = position3_named
+  ddr = {
+    mid  = "Base-Types.Wrappers-Vector3d"
+    mmid = "ASN1"
+  }
+  dr = {0=x, 1=y, 2=z}
+}
+
+dproto Base_Quaternion :: geometric {
+  semantic  = Orientation
+  coord     = quaternion
+  algebraic = quat_named
+  ddr = {
+    mid  = "Base-Types.Wrappers-Quaterniond"
+    mmid = "ASN1"
+  }
+  dr = {re=w, im.0=x, im.1=y, im.2=z}
+}
+
+dproto Base_Pose :: geometric {
+  semantic = Pose
+  composes = {
+    Position    = Base_Position
+    Orientation = Base_Quaternion
+  }
+  dr = {
+    orientation = Orientation
+    position    = Position
+  }
+}
+
+//This is only to test compositions of compositions
+dproto SuperPose :: geometric {
+  semantic = PairPose
+  composes = {
+    Obj1 = Base_Pose
+    Obj2 = Base_Pose
+  }
+  dr = {
+    bar = Obj1
+    foo = Obj2
+  }
+}
+
+dproto kul_position :: geometric {
+  semantic  = Position
+  coord     = cartesian
+  algebraic = position3_named
+  ddr = {
+    mid  = "Matrix<3,1>"
+    mmid = "Eigen"
+  }
+  dr = {
+    {0,0} = x, {1,0} = y, {2,0} = z
+  }
+}
+
+dproto kul_position2 :: geometric {
+  semantic  = Position
+  coord     = cartesian
+  algebraic = position3
+  ddr = {
+    mid  = "Matrix<3,1>"
+    mmid = "Eigen"
+  }
+  dr = {
+    {0,0} = 0, {1,0} = 1, {2,0} = 2
+  }
+}
+
+dproto kul_quaternion :: geometric {
+  semantic  = Orientation
+  coord     = quaternion
+  algebraic = quat_named
+  ddr = {
+    mid  = "Vector4d"
+    mmid = "Eigen"
+  }
+  dr = {
+    0 = x, 1 = y, 2 = z, 3 = w
+  }
+}
+
+dproto kul_quaternion2 :: geometric {
+  semantic  = Orientation
+  coord     = quaternion
+  algebraic = quat
+  ddr = {
+    mid  = "Vector4d"
+    mmid = "Eigen"
+  }
+  dr = {0 = 0, 1 = 1, 2 = 2, 3 = 3}
+}
+
+dproto kul_rotation :: geometric {
+  semantic  = Orientation
+  coord     = rot_matrix
+  algebraic = orient_rot_mx
+  ddr = {
+    mid  = "Matrix<3,3>" 
+    mmid = "Eigen"
+  }
+  dr = {
+    {0,0} = {0,0}, {0,1} = {0,1}, {0,2} = {0,2},
+    {1,0} = {1,0}, {1,1} = {1,1}, {1,2} = {1,2},
+    {2,0} = {2,0}, {2,1} = {2,1}, {2,2} = {2,2}
+  }
+}
+
+dproto kul_rotation2 :: geometric {
+  semantic  = Orientation
+  coord     = rot_matrix
+  algebraic = orient_rot_named
+  ddr = {
+    mid  = "Matrix<3,3>" 
+    mmid = "Eigen"
+  }
+  dr = {
+    {0,0} = Xx, {0,1} = Xy, {0,2} = Xz,
+    {1,0} = Yx, {1,1} = Yy, {1,2} = Yz,
+    {2,0} = Zx, {2,1} = Zy, {2,2} = Zz
+  }
+}
+
+dproto kul_pose :: geometric {
+  semantic  = Pose
+  coord     = homogeneous_transformation
+  algebraic = ht_matrix
+  ddr = {
+    mid  = "Matrix<4,4>"
+    mmid = "Eigen"
+  }
+  dr = {
+    {0,0} = {0,0}, {0,1} = {0,1}, {0,2} = {0,2}, {0,3} = {0,3},
+    {1,0} = {1,0}, {1,1} = {1,1}, {1,2} = {1,2}, {1,3} = {1,3},
+    {2,0} = {2,0}, {2,1} = {2,1}, {2,2} = {2,2}, {2,3} = {2,3},
+    {3,0} = {3,0}, {3,1} = {3,1}, {3,2} = {3,2}, {3,3} = {3,3}
+  }
+}
+
+dproto kul_pose2 :: geometric {
+  semantic = Pose
+  composes  = {
+    Position    = kul_position
+    Orientation = kul_quaternion
+  }
+  dr = {
+    position    = Position
+    orientation = Orientation
+  }
+}
+
+dproto kul_superpose :: geometric {
+  semantic = PairPose
+  composes = {
+    Obj1 = kul_pose2
+    Obj2 = kul_pose2
+  }
+  dr = {
+    o1 = Obj1
+    o2 = Obj2
+  }
+}
+
+dproto QUAT :: geometric {
+  semantic  = Orientation
+  coord     = quaternion
+  algebraic = quat_named
+  ddr = {
+    mid  = "double[4]"
+    mmid = "c99"
+  }
+  dr = { 0=x, 1=y, 2=z, 3=w}
+}
+
+dproto ROT :: geometric {
+  semantic  = Orientation
+  coord     = rot_matrix
+  algebraic = orient_rot_mx
+  ddr  = {
+    mid  = "double[9]"
+    mmid = "c99"
+  }
+  dr = {
+    0 = {0,0}, 1 = {0,1}, 2 = {0,2},
+    3 = {1,0}, 4 = {1,1}, 5 = {1,2},
+    6 = {2,0}, 7 = {2,1}, 8 = {2,2}
+  }
+}

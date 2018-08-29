@@ -1,0 +1,84 @@
+// DPROTO MODULE DEFINITIONS FOR TEST3
+// Author: Enea Scioni, <enea.scioni@kuleuven.be>
+// 2018, KU Leuven, Belgium
+
+// -- Algebraic definitions --
+
+// --  -- Orientation -- --
+
+algebraic quat             :: Vector{4}
+algebraic quat_named       :: Scalar{x,y,z,w}
+algebraic orient_rot_mx    :: Matrix{3,3}
+algebraic orient_rot_named :: Scalar{Xx,Xy,Xz,Yx,Yy,Yz,Zx,Zy,Zz}
+// -- -- Pose -- --
+algebraic ht_matrix :: Matrix{4,4}
+
+dproto Base_Quaternion :: geometric {
+  semantic  = Orientation
+  coord     = quaternion
+  algebraic = quat_named
+  ddr = {
+    mid  = "Base-Types.Wrappers-Quaterniond"
+    mmid = "ASN1"
+  }
+  dr = {re=w, im.0=x, im.1=y, im.2=z}
+}
+
+dproto kul_rotation :: geometric {
+  semantic  = Orientation
+  coord     = rot_matrix
+  algebraic = orient_rot_mx
+  ddr = {
+    mid  = "Matrix<3,3>" 
+    mmid = "Eigen"
+  }
+  dr = {
+    {0,0} = {0,0}, {0,1} = {0,1}, {0,2} = {0,2},
+    {1,0} = {1,0}, {1,1} = {1,1}, {1,2} = {1,2},
+    {2,0} = {2,0}, {2,1} = {2,1}, {2,2} = {2,2}
+  }
+}
+
+dproto kul_rotation2 :: geometric {
+  semantic  = Orientation
+  coord     = rot_matrix
+  algebraic = orient_rot_named
+  ddr = {
+    mid  = "Matrix<3,3>" 
+    mmid = "Eigen"
+  }
+  dr = {
+    {0,0} = Xx, {0,1} = Xy, {0,2} = Xz,
+    {1,0} = Yx, {1,1} = Yy, {1,2} = Yz,
+    {2,0} = Zx, {2,1} = Zy, {2,2} = Zz
+  }
+}
+
+// Internal conversion
+conversion QUAT -> ROT = quat2rot
+
+dproto QUAT :: geometric {
+  semantic  = Orientation
+  coord     = quaternion
+  algebraic = quat_named
+  ddr = {
+    mid  = "double[4]"
+    mmid = "c99"
+  }
+  dr = { 0=x, 1=y, 2=z, 3=w}
+}
+
+dproto ROT :: geometric {
+  semantic  = Orientation
+  coord     = rot_matrix
+  algebraic = orient_rot_mx
+  ddr  = {
+    mid  = "double[9]"
+    mmid = "c99"
+  }
+  dr = {
+    0 = {0,0}, 1 = {0,1}, 2 = {0,2},
+    3 = {1,0}, 4 = {1,1}, 5 = {1,2},
+    6 = {2,0}, 7 = {2,1}, 8 = {2,2}
+  }
+}
