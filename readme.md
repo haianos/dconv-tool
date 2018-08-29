@@ -178,7 +178,15 @@ Coming Soon.
 ## Run the tests
 
 All tests uses the Busted Framework and they are self-contained in the `busted` folder of this repository.
-To try them out, download this repository and run them as:
+To try them out, download this repository with
+```
+https://github.com/haianos/dconv-tool.git
+```
+source the `sourceme.sh`
+```
+source sourceme.sh
+```
+and run them as:
 ```
 busted busted/testX/testX.lua
 ```
