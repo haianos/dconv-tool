@@ -58,15 +58,15 @@ process.
 3. Download the required rockspecs with `curl` or `wget`:
 
 ```
-luarocks install --local https://people.mech.kuleuven.be/~u0072295/software/luarocks/lua-common-tools-0.1-2.rockspec
-luarocks install --local https://raw.githubusercontent.com/haianos/dconv-tool/master/dconv-tool-0.1-1.rockspec
+wget https://people.mech.kuleuven.be/~u0072295/software/luarocks/lua-common-tools-0.1-2.rockspec
+wget https://raw.githubusercontent.com/haianos/dconv-tool/master/dconv-tool-0.1-1.rockspec
 ```
 
 4. Installing the:
 
     ```
-    luarocks install --local lua-deps-1.0-1.rockspec
-    luarocks install --local lua-deps-1.0-1.rockspec
+    luarocks install --local lua-common-tools-0.1-2.rockspec
+    luarocks install --local dconv-tool-0.1-1.rockspec
     ```
 
     
