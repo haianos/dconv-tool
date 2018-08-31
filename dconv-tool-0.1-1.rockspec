@@ -34,5 +34,6 @@ build = {
   install = {
     bin = {
       dconv = 'dconv'
+    }
   }
 }
