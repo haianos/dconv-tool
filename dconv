@@ -1,0 +1,109 @@
+#! /usr/bin/env lua
+
+utils      = require('utils')
+ansicolors = require('ansicolors')
+lfs        = require("lfs")
+dconv  = require('dproto-conv-gen')
+
+--- helper, print a bright red errormsg
+local function errmsg(...)
+    print(ansicolors.bright(ansicolors.red(table.concat({ ... }, ' '))))
+end
+
+--- helper, print a yellow warning msg
+local function warnmsg(...)
+    print(ansicolors.yellow(table.concat({ ... }, ' ')))
+end
+
+--- helper, print a green sucess msg
+local function succmsg(...)
+    print(ansicolors.green(table.concat({ ... }, ' ')))
+end
+
+--- check if file exists
+local function is_file(name)
+  local what = lfs.attributes(name,'mode')
+  if what == 'file' then return true end
+  return false
+end
+
+function usage()
+    print([[
+dconv: a static generator of datatypes models (dproto) conversions to C
+
+Usage: dconv [OPTIONS] --from <dproto-name> --to <dproto-name>
+    from       Source dproto identifier (name) for the conversion
+    to         Target dproto identifier (name) for the conversion
+[OPTIONS]
+    --asn1      <ASN1 input files>     list of ASN1 models as input (.asn1)
+    --dproto    <dproto input>         dproto file model (input) (.dproto)
+    -o          <filename>             output (generated C/C++ source)
+
+
+    -h        prints this help
+]])
+end
+---
+-- Program enters here
+-----------------------------------
+local opttab = utils.proc_args(arg)
+
+if #arg == 1 or opttab['-h'] then usage(); os.exit(1) end
+
+if not (opttab['--dproto'] and opttab['--dproto'][1]) then
+  errmsg("missing dproto definitions, option '--dproto'"); os.exit(1)
+end
+
+--DEVNOTE: ASN1 models needed only if in dproto
+-- FIX: request this only when necessary (in dconv.init_runtime)
+if not (opttab['--asn1'] and opttab['--asn1'][1]) then
+  errmsg("missing ASN1 definitions, option '--asn1'"); os.exit(1)
+end
+
+if not (opttab['--from'] and opttab['--from'][1]) then
+  errmsg("missing source dproto name"); os.exit(1)
+end
+
+if not (opttab['--to'] and opttab['--to'][1]) then
+  errmsg("missing target dproto name"); os.exit(1)
+end
+
+src        = opttab['--from'][1]
+src_prefix = opttab['--from'][2] or ''
+tgt        = opttab['--to'][1]
+tgt_prefix = opttab['--to'][2] or ''
+dprotofile = opttab['--dproto'][1]
+asn_files  = opttab['--asn1']
+
+outfilename = false
+fd          = nil
+if opttab['-o'] then
+  outfilename = opttab['-o'][1]
+end
+
+-- Check if parsed file exists before to execute
+for i,v in pairs(asn_files) do
+  if not is_file(v) then 
+    errmsg('ASN1 file input "'..tostring(v)..'" not found');
+    os.exit(1)
+  end
+end
+
+if not is_file(dprotofile) then
+  errmsg('dproto file input "'..tostring(dprotofile)..'" not found');
+  os.exit(1);
+end
+
+dconv.init_runtime(dprotofile,asn_files)
+
+g,err = dconv.convert(src,tgt)
+if not g then errmsg('Error during conversion: '..tostring(err)); os.exit(1); end;
+
+if outfilename then fd = io.open(outfilename,'w') end
+g(fd,src_prefix,tgt_prefix)
+
+if fd then 
+  succmsg("Code generated in "..outfilename)
+  fd:close()
+end
+

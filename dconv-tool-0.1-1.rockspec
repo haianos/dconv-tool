@@ -15,10 +15,11 @@ description = {
 dependencies = {
   "lua > 5.1",
   "lua-common-tools",
-  "busted",
   "lpeg",
   "lpeglabel",
-  "luautf8"
+  "luautf8",
+  "busted",  --for testing only
+  "lfs"      --command tool only
 }
 build = {
   type = "builtin",
@@ -29,6 +30,9 @@ build = {
     ['parser/asn1']      = "src/parser/asn1.lua",
     ['parser/eigen']     = "src/parser/eigen.lua",
     ['parser/dproto']    = "src/parser/dproto.lua"
+  },
+  install = {
+    bin = {
+      dconv = 'dconv'
   }
 }
-

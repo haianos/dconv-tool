@@ -173,7 +173,32 @@ v(out,'lhs.','rhs')
 
 ### Usage as Command-line tool
 
-Coming Soon.
+As a quick alternative to the Lua module API, a convenient command-line tool
+is provided `dconv`
+
+**SYNOPSIS**
+```
+    dconv: a static generator of datatypes models (dproto) conversions to C
+
+Usage: dconv [OPTIONS] --from <dproto-name> --to <dproto-name>
+    from       Source dproto identifier (name) for the conversion
+    to         Target dproto identifier (name) for the conversion
+[OPTIONS]
+    --asn1      <ASN1 input files>     list of ASN1 models as input (.asn1)
+    --dproto    <dproto input>         dproto file model (input) (.dproto)
+    -o          <filename>             output (generated C/C++ source)
+
+
+    -h        prints this help
+```
+
+```
+dconv --dproto esrocos-defs.dproto --asn1 busted/test1/taste-types.asn \
+        busted/test1/taste-extended.asn busted/test1/userdefs-base.asn busted/test1/mybase.asn \
+        --from Base_Pose lhs. --to kul_pose2 rhs.
+```
+
+This example can also be executed by running `./examples/runme.sh`.
 
 ## Run the tests
 
