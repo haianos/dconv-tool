@@ -76,12 +76,17 @@ wget https://raw.githubusercontent.com/haianos/dconv-tool/master/dconv-tool-0.1-
 
 The `dconv-tool` can be used directly as a `Lua` module:
 ```
-dconv  = require('dproto-conv-gen')
-ret, err =  dconv.init_runtime(dprotofile,asn_files)
+dconv    = require('dproto-conv-gen')
+ddr_models = {
+ asn_files = { ... } -- list of asn models
+}
+ 
+ret, err =  dconv.init_runtime(dprotofile,ddr_models)
 if not ret then error(err); end
 ```
-where `dprotofile` is a `.dproto` file model, and `asn_files` are a list (Lua-table)
-of the files containing ASN1 module definitions.
+where `dprotofile` is a `.dproto` file model, and `ddr_models` are 
+a collection of dictionaries (Lua table), each one dedicate do a different DDR representation:
+  * `asn_files`: list (Lua table) of input ASN1 models.
 
 `dconv` provides:
   * A common API based on the algebraic information of the datatype to link to
@@ -193,8 +198,8 @@ Usage: dconv [OPTIONS] --from <dproto-name> --to <dproto-name>
 ```
 
 ```
-dconv --dproto esrocos-defs.dproto --asn1 busted/test1/taste-types.asn \
-        busted/test1/taste-extended.asn busted/test1/userdefs-base.asn busted/test1/mybase.asn \
+dconv --dproto busted/test1/dproto/test1.dproto --asn1 busted/test1/asn/taste-types.asn \
+        busted/test1/asn/taste-extended.asn busted/test1/asn/userdefs-base.asn busted/test1/asn/mybase.asn \
         --from Base_Pose lhs. --to kul_pose2 rhs.
 ```
 

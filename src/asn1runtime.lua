@@ -82,7 +82,7 @@ local function get_withtag(defs,typeof)
 end
 
 -- Initialise the context(s) from ASN1 file models
-
+local __is_init = false
 --[[ Note.
      There is no file resolution in the ASN1 compiler.
    file name may mismatch with the name of the module.
@@ -155,7 +155,12 @@ local function init_runtime(asn_files,ctx)
     end
   end
   
+  __is_init = true
   return ctx
+end
+
+local function is_init()
+  return __is_init
 end
 
 --[[ Utility functions to query the context --]]
@@ -253,12 +258,14 @@ return function(ctx)
     M.get_modules = function() return get_modules(ctx) end
     M.init_runtime= function(asn_files) return init_runtime(asn_files,ctx) end
     M.solve_field = function(ns,defname,hints,fieldname) return solve_field(ctx,ns,defname,hints,fieldname) end
+    M.is_init     = is_init
   else
     M.get_def      = get_def
     M.get_def_ns   = get_def_ns
     M.get_modules  = get_modules
     M.init_runtime = init_runtime
     M.solve_field  = solve_field
+    M.is_init      = is_init
   end
   for i,v in pairs(op_filters) do
     M['is_'..i] = v

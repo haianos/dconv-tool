@@ -130,14 +130,16 @@ end
 
 -- Initialise the runtime of the Dproto Conversion Tool
 -- @param: parsed content of .dproto model(s)
-local function init_runtime(dprotofile,asn_files)
+local function init_runtime(dprotofile,ddr_models)
   local parsed, err = dparser.parse_file(dprotofile)
   if not parsed then
     return false,  err
   end
   
-  ok, err = asnr.init_runtime(asn_files)
-  if not ok then return false, err end
+  if ddr_models.asn_files then
+    ok, err = asnr.init_runtime(ddr_models.asn_files)
+    if not ok then return false, err end
+  end
   
   for i,v in pairs(parsed) do                                       --DEVNOTE: make it structural
     if v._tag == 'Op.Algebraic' then algebraic[v.name] = v end
@@ -338,6 +340,9 @@ local function SDBLX(dproto)
   
   ------------- ASN1
   if ddr.mmid == 'ASN1' then
+    if not asnr.is_init() then
+      return false, 'ASN1 runtime has not been initialised (probably no ASN1 models has been provided as input)'
+    end
     local module, def = extract_asn_mid(ddr.mid)
     p.dblx = def
     local afnc = function(key,prefix)

@@ -28,7 +28,8 @@ ansicolors = require('ansicolors')
 
 dconv  = require('dproto-conv-gen')
 
-ret, err =  dconv.init_runtime(dprotofile,asn_files)
+ddr_models = {asn_files = asn_files}
+ret, err =  dconv.init_runtime(dprotofile,ddr_models)
 
 if not ret then error(err); end
 

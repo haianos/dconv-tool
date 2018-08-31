@@ -75,6 +75,7 @@ tgt_prefix = opttab['--to'][2] or ''
 dprotofile = opttab['--dproto'][1]
 asn_files  = opttab['--asn1']
 
+ddr_models  = {}
 outfilename = false
 fd          = nil
 if opttab['-o'] then
@@ -88,13 +89,14 @@ for i,v in pairs(asn_files) do
     os.exit(1)
   end
 end
+ddr_models.asn_files = asn_files
 
 if not is_file(dprotofile) then
   errmsg('dproto file input "'..tostring(dprotofile)..'" not found');
   os.exit(1);
 end
 
-dconv.init_runtime(dprotofile,asn_files)
+dconv.init_runtime(dprotofile,ddr_models)
 
 g,err = dconv.convert(src,tgt)
 if not g then errmsg('Error during conversion: '..tostring(err)); os.exit(1); end;

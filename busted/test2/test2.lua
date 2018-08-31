@@ -28,7 +28,8 @@ ansicolors = require('ansicolors')
 
 dconv  = require('dproto-conv-gen')
 
-dconv.init_runtime(dprotofile,asn_files)
+ddr_models = {asn_files = asn_files}
+dconv.init_runtime(dprotofile,ddr_models)
 
 -- Aliases
 SDBLX = dconv.SDBLX
