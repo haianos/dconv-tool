@@ -19,7 +19,7 @@ dependencies = {
   "lpeglabel",
   "luautf8",
   "busted",  --for testing only
-  "lfs"      --command tool only
+  "luafilesystem"      --command tool only
 }
 build = {
   type = "builtin",
