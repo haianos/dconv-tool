@@ -2,10 +2,11 @@
 
 Automatic datatype conversion generation tool based on dproto models.
 
+
 ## What it does
 
-`dconv` is a tool for static `C` and `C++` code generation starting from
-enriched datatypes models called `dproto`s.
+`dconv` is an automatic data conversion tool that support both static code generation (`C/C++` target)
+and dynamic runtime conversion, from semantic annotations, called `dproto` models.
 A `dproto` model includes semantic information about a data structure,
 independently from its *digital data representation`, that is, the model
 used to express the datatype (usually an IDL to describe Communication Objects).
@@ -16,6 +17,11 @@ has been placed into the models to perform so.
 
 Please see folder `busted` and `examples` for further hints.
 
+## RUNTIME Example
+
+Embedding the runtime is rather straighforward. An example with `ROS` (`rclc`) can be found here
+[dconv-rclc-example](https://github.com/haianos/dconv-rclc-example)
+
 ## Current supported IDLs:
 
   * `ASN1`
@@ -24,7 +30,7 @@ Please see folder `busted` and `examples` for further hints.
   
 ## Coming up support:
 
-  * `ROS-IDL`
+  * `ROS-IDL`: currently on runtime-only, example in [dconv-rclc-example](https://github.com/haianos/dconv-rclc-example)
   * `SmartSoft Communication Object`
 
 ## Prerequisites and installation
@@ -69,8 +75,17 @@ wget https://raw.githubusercontent.com/haianos/dconv-tool/master/dconv-tool-0.1-
     luarocks install --local dconv-tool-0.1-1.rockspec
     ```
 
-    
+
+## DPROTO Syntax
+
+See `docs` folder (coming soon)
+
 ## Usage
+
+### RUNTIME EXAMPLE
+
+Please, see `busted/test4` subfolder and [dconv-rclc-example](https://github.com/haianos/dconv-rclc-example).
+
 
 ### Usage as a library
 
@@ -107,11 +122,8 @@ dproto Base_Quaternion :: geometric {
   semantic  = Orientation
   coord     = quaternion
   algebraic = quat_named
-  ddr = {
-    mid  = "Base-Types.Wrappers-Quaterniond"
-    mmid = "ASN1"
-  }
-  dr = {re=w, im.0=x, im.1=y, im.2=z}
+  ddr       = :: ASN1 {Base-Types.Wrappers-Quaterniond}
+  dr        = {re=w, im.0=x, im.1=y, im.2=z}
 }
 ```
 The model above enriches the *digital data representation* (`ddr`) used in the implementation;
@@ -228,7 +240,7 @@ Description of the tests can be found in `description.md` in each relative test 
 
 ## DPROTO
 
-**TODO**, describe `dproto` model
+**TODO**, describe `dproto` model (see publication)
 
   * `domain`
   * `semantic`

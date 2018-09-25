@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+import sys
+import json
+from rosidl_parser import parse_message_file
+
+#ros_interface_file = '/home/haianos/experimental/common_interfaces/geometry_msgs/msg/Point.msg'
+
+#spec = parse_message_file('geometry_msgs', ros_interface_file)
+
+#print(spec.base_type.pkg_name)
+#print(spec.msg_name)
+#print(spec.base_type.type)
+#print(dir(spec))
+#print(dir(spec.base_type))
+
+#for field in spec.fields:
+  #print(field,field.name,field.type,field.default_value,type(field))
+
+## ROS generator uses .em (empy) description because they have to generate
+## not only the structs, but also includes, etc, in multiple files
+## I just need the generated data structure
+def generate_struct(spec):
+  data = {}
+  data['name']  = spec.base_type.pkg_name+'__msg__'+spec.msg_name
+  fields = []
+  for field in spec.fields:
+    #print(field.type.is_primitive_type())
+    #print(dir(field.type))
+    #print(field.type.is_primitive_type,dir(field.type.is_primitive_type))
+    fields.append({
+    'typeof' : {
+      'pkg'      : field.type.pkg_name,
+      'type'     : field.type.type,
+      'is_array' : field.type.is_array,
+      'array_size' : field.type.array_size,
+      'is_primitive' : field.type.is_primitive_type()
+    },
+    'name'   : field.name,
+    'value'  : field.default_value
+  })
+  data['fields'] = fields
+  return data
+
+
+def main():
+  if sys.argv[1] == 'path':
+    from ros2msg.api import get_message_path
+    tmpfile = open("/tmp/ros2msg_path", "w")
+    tmpfile.write(get_message_path(sys.argv[2],sys.argv[3]))
+    tmpfile.close()
+  else:
+    pkg_name = sys.argv[2]
+    ros_interface_file = sys.argv[3]
+    spec = parse_message_file(pkg_name, ros_interface_file)
+    d=generate_struct(spec)
+    #print(json.dumps(d))
+    tmpfile = open("/tmp/ros2msg_spec", "w")
+    json.dump(d,tmpfile)
+    tmpfile.close()
+
+
+if __name__ == "__main__":
+    main()
+  

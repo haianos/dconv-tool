@@ -18,8 +18,9 @@ dependencies = {
   "lpeg",
   "lpeglabel",
   "luautf8",
-  "busted",  --for testing only
-  "luafilesystem"      --command tool only
+  "luajson",           --for rosidl support
+  "busted",            --for testing only
+  "luafilesystem"      --command line tool only
 }
 build = {
   type = "builtin",
@@ -27,13 +28,17 @@ build = {
     asn1runtime          = "src/asn1runtime.lua",
     location             = "src/location.lua",
     ['dproto-conv-gen']  = "src/dproto-conv-gen.lua",
+    ['reflect']          = "src/reflect.lua",
     ['parser/asn1']      = "src/parser/asn1.lua",
     ['parser/eigen']     = "src/parser/eigen.lua",
-    ['parser/dproto']    = "src/parser/dproto.lua"
+    ['parser/dproto']    = "src/parser/dproto.lua",
+    ['parser/map']       = "src/parser/map.lua",
+    ['ros/rclc-gen']      = "ros/rclc-gen.lua"
   },
   install = {
     bin = {
-      dconv = 'dconv'
+      dconv = 'dconv',
+      ['rosidl-parser-json'] = "ros/rosidl-parser-json"
     }
   }
 }
