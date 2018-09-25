@@ -13,25 +13,22 @@ algebraic orient_rot_named :: Scalar{Xx,Xy,Xz,Yx,Yy,Yz,Zx,Zy,Zz}
 // -- -- Pose -- --
 algebraic ht_matrix :: Matrix{4,4}
 
-dproto Base_Quaternion :: geometric {
+// ddr definitions
+ddr eigen_m33 ::  Eigen{Matrix<3,3>}
+
+dproto Base_Quaternion :: geometry {
   semantic  = Orientation
   coord     = quaternion
   algebraic = quat_named
-  ddr = {
-    mid  = "Base-Types.Wrappers-Quaterniond"
-    mmid = "ASN1"
-  }
+  ddr       = :: ASN1 {Base-Types.Wrappers-Quaterniond}
   dr = {re=w, im.0=x, im.1=y, im.2=z}
 }
 
-dproto kul_rotation :: geometric {
+dproto kul_rotation :: geometry {
   semantic  = Orientation
   coord     = rot_matrix
   algebraic = orient_rot_mx
-  ddr = {
-    mid  = "Matrix<3,3>" 
-    mmid = "Eigen"
-  }
+  ddr       = eigen_m33
   dr = {
     {0,0} = {0,0}, {0,1} = {0,1}, {0,2} = {0,2},
     {1,0} = {1,0}, {1,1} = {1,1}, {1,2} = {1,2},
@@ -39,14 +36,11 @@ dproto kul_rotation :: geometric {
   }
 }
 
-dproto kul_rotation2 :: geometric {
+dproto kul_rotation2 :: geometry {
   semantic  = Orientation
   coord     = rot_matrix
   algebraic = orient_rot_named
-  ddr = {
-    mid  = "Matrix<3,3>" 
-    mmid = "Eigen"
-  }
+  ddr       = eigen_m33
   dr = {
     {0,0} = Xx, {0,1} = Xy, {0,2} = Xz,
     {1,0} = Yx, {1,1} = Yy, {1,2} = Yz,
@@ -57,25 +51,19 @@ dproto kul_rotation2 :: geometric {
 // Internal conversion
 conversion QUAT -> ROT = quat2rot
 
-dproto QUAT :: geometric {
+dproto QUAT :: geometry {
   semantic  = Orientation
   coord     = quaternion
   algebraic = quat_named
-  ddr = {
-    mid  = "double[4]"
-    mmid = "c99"
-  }
+  ddr       = :: c99{double[4]}
   dr = { 0=x, 1=y, 2=z, 3=w}
 }
 
-dproto ROT :: geometric {
+dproto ROT :: geometry {
   semantic  = Orientation
   coord     = rot_matrix
   algebraic = orient_rot_mx
-  ddr  = {
-    mid  = "double[9]"
-    mmid = "c99"
-  }
+  ddr       = ::c99{double[9]}
   dr = {
     0 = {0,0}, 1 = {0,1}, 2 = {0,2},
     3 = {1,0}, 4 = {1,1}, 5 = {1,2},

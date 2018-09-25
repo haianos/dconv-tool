@@ -1,0 +1,96 @@
+// DPROTO MODULE DEFINITION FOR TEST4
+// Author: Enea Scioni, <enea.scioni@kuleuven.be>
+// 2018, KU Leuven, Belgium
+// Testing runtime engine with ROS
+
+
+algebraic position_named  :: Scalar{x,y,z}
+algebraic position3       :: Vector{3}
+algebraic quaterion_named :: Scalar{x,y,z,w}
+algebraic orient_rot_mx   :: Matrix{3,3}
+ddr       ros_point       :: ROS {geometry_msgs/Point}
+
+alias position3 <-> position_named {
+  0 = x,
+  1 = y,
+  2 = z
+}
+
+dproto ros_position :: geometry {
+  semantic  = Position
+  coord     = cartesian
+  algebraic = position3
+  ddr       = ros_point
+  dr        = {x=0, y=1, z=2}
+}
+
+dproto ros_position2 :: geometry {
+  semantic  = Position
+  coord     = cartesian
+  algebraic = position_named
+  ddr       = ros_point
+  dr        = {x=x, y=y, z=z}
+}
+
+dproto ros_quaternion :: geometry {
+  semantic  = Orientation
+  coord     = quaternion
+  algebraic = quaterion_named
+  ddr       = :: ROS {geometry_msgs/Quaternion}
+  dr        = {x=x, y=y, z=z, w=w}
+}
+
+dproto ros_pose :: geometry {
+  semantic = Pose
+  composes = {
+    Position    = ros_position2
+    Orientation = ros_quaternion 
+  }
+  dr = {position=Position,orientation=Orientation}
+  usingddr = {
+    mid  = "geometry_msgs/Pose"
+    mmid = "ROS"
+  }
+}
+
+dproto plain_position :: geometry {
+  semantic  = Position
+  coord     = cartesian
+  algebraic = position_named
+  ddr       = :: c99 {double[3]}
+  dr        = {0=x, 1=y, 2=z}
+}
+
+dproto plain_rotation :: geometry {
+  semantic  = Orientation
+  coord     = rot_matrix
+  algebraic = orient_rot_mx
+  ddr       = :: c99 {double[9]}
+  dr = {
+    0 = {0,0}, 1 = {0,1}, 2 = {0,2},
+    3 = {1,0}, 4 = {1,1}, 5 = {1,2},
+    6 = {2,0}, 7 = {2,1}, 8 = {2,2}
+  }
+}
+
+dproto plain_pose :: geometry {
+  semantic  = Pose
+  composes = {
+    Position    = plain_position
+    Orientation = plain_rotation
+  }
+  dr = {position = Position, orientation = Orientation}
+}
+
+conversion ros_quaternion -> plain_rotation = quat2rot
+
+load ros-c99
+
+fproto quat2rot :: {
+  library =  "ros-c99"
+  args    = {
+    1 <= ros_quaternion,
+    2 => plain_rotation
+  }
+  fname   =  "quat2rot"
+}

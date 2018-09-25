@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE language SYSTEM "language.dtd">
+<!--
+Enea Scioni, <enea.scioni@kuleuven.be>
+2018, KU Leuven, Belgium
+
+    MFCF syntax highlighting for Kate
+    -->
+<language name="MFCF" version="1.06" indenter="lua" kateversion="2.4" section="Scripts" extensions="*.dproto" mimetype="text/x-mfcf">
+  <highlighting>
+    <list name="keywords">
+      <item> dproto    </item>
+      <item> ddr       </item>
+      <item> algebraic </item>
+      <item> coord     </item>
+      <item> dr        </item>
+      <item> units     </item>
+      <item> semantic  </item>
+      <item> fproto    </item>
+      <item> load      </item>
+      <item> alias     </item>
+      <item> conversion</item>
+      <item> composes  </item>
+    </list>
+    <list name="control">
+      <item> Scalar </item>
+      <item> Vector </item>
+      <item> Matrix </item>
+    </list>
+    <list name="domains">
+      <item> ROS </item>
+      <item> ASN1 </item>
+      <item> geometry </item>
+      <item> c99   </item>
+      <item> Eigen </item>
+      <item> qudt  </item>
+    </list>
+    <list name="basefunc">
+      <item> usingddr </item> 
+    </list>
+    <list name="attention">
+      <item> TODO </item>
+      <item> FIXME </item>
+      <item> NOTE </item>
+    </list>
+    <list name="deprecated">
+      <item> NONE </item>
+    </list>
+
+    <contexts>
+      <context name="Normal"        attribute="Normal Text" lineEndContext="#stay">
+        <IncludeRules context="##DoxygenLua" />
+        <keyword      attribute="Error"  context="#stay" String="deprecated" />
+        <DetectSpaces />
+        <RegExpr      attribute="Comment"  context="Block Comment" beginRegion="block comment"  String="--\[(=*)\[" dynamic="true" />
+        <Detect2Chars attribute="Comment"  context="Comment"       char="/" char1="/"/>
+        <RegExpr      attribute="Strings"  context="String_block"  String="\[(=*)\[" dynamic="true" />
+        <DetectChar   attribute="Strings"  context="String_single" char="'"/>
+        <DetectChar   attribute="Strings"  context="String_double" char="&quot;"/>
+        <keyword      attribute="BFunc"    context="#stay"         String="basefunc"/>
+
+        <RegExpr      attribute="Keyword"  context="#stay" beginRegion="chunk" String="\bfunction\b" />
+        <keyword      attribute="Keyword"  context="#stay" String="keywords" />
+        <keyword      attribute="Domain"   context="#stay"  String="domains" />
+        <RegExpr      attribute="Control"  context="#stay" endRegion="chunk"   beginRegion="chunk" String="\belse\b" />
+        <RegExpr      attribute="Control"  context="#stay" endRegion="chunk"   beginRegion="chunk" String="\belseif\b" />
+        <RegExpr      attribute="Control"  context="#stay" beginRegion="chunk" String="\bdo\b" />
+        <RegExpr      attribute="Control"  context="#stay" beginRegion="chunk" String="\bif\b" />
+        <RegExpr      attribute="Control"  context="#stay" endRegion="chunk"   String="\bend\b" />
+        <keyword      attribute="Control"  context="#stay" String="control" />
+
+        <DetectChar   attribute="Symbols"  context="#stay" beginRegion="table" char="{" />
+        <DetectChar   attribute="Symbols"  context="#stay" endRegion="table"   char="}" />
+        
+        <Detect2Chars   attribute="Symbols"  context="#stay" endRegion="chunk"   char=":" char2=":" />
+
+        <RegExpr      attribute="Numbers"  context="#stay"  String="\b\d*\.?\d*(e|e\-|e\+)?\d+\b"/>
+        <RegExpr      attribute="Numbers"  context="#stay"  String="\b-?0[xX][0-9a-fA-F]+\b"/>
+
+        <RegExpr      attribute="Normal Text" context="#stay" String="\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*([({'&quot;]|\[\[))\b" />
+        <RegExpr      attribute="Constant" context="#stay" String="\b[A-Z_][A-Z0-9_]*\b" />
+        <RegExpr      attribute="Variable" context="#stay" String="\b[a-zA-Z_][a-zA-Z0-9_]*\b" />
+
+        <Detect2Chars attribute="Error"    context="#stay" char="!" char1="="/>
+        <Detect2Chars attribute="Error"    context="#stay" char="-" char1="="/>
+        <Detect2Chars attribute="Error"    context="#stay" char="+" char1="="/>
+        <Detect2Chars attribute="Error"    context="#stay" char="+" char1="+"/>
+        <Detect2Chars attribute="Error"    context="#stay" char="." char1="="/>
+        <AnyChar      attribute="Symbols"  context="#stay" String=":[]().,=/^&gt;&lt;#;" />
+      </context>
+      <context name="Comment"       attribute="Comment"     lineEndContext="#pop">
+        <Detect2Chars attribute="Alerts"   context="#stay" char="-" char1="-" />
+        <keyword      attribute="Alerts"   context="#stay" String="attention"/>
+      </context>
+      <context name="Block Comment" attribute="Comment"     lineEndContext="#stay" dynamic="true" >
+        <RegExpr attribute="Comment"  context="#pop"  endRegion="block comment" String="\]%1\]" dynamic="true" />
+        <Detect2Chars attribute="Alerts"   context="#stay" char="-" char1="-" />
+        <keyword      attribute="Alerts"   context="#stay" String="attention" />
+      </context>
+      <context name="String_single" attribute="Strings"     lineEndContext="Error">
+        <RegExpr      attribute="Symbols"  context="#stay" String="\\(a|b|f|n|r|t|v|\\|&quot;|\'|[|])" />
+        <DetectChar   attribute="Strings"  context="#pop"  char="'"/>
+      </context>
+      <context name="String_double" attribute="Strings"     lineEndContext="Error">
+        <RegExpr      attribute="Symbols"  context="#stay" String="\\[abfnrtv'&quot;\\\[\]]" />
+        <DetectChar   attribute="Strings"  context="#pop"  char="&quot;"/>
+      </context>
+      <context name="String_block"  attribute="Strings"     lineEndContext="#stay" dynamic="true">
+        <RegExpr      attribute="Symbols"  context="#stay" String="\\(a|b|f|n|r|t|v|\\|&quot;|\'|[|])" />
+        <RegExpr      attribute="Strings"  context="#pop"  String="\]%1\]" dynamic="true" />
+      </context>
+      <context name="Error"         attribute="Error"       lineEndContext="#stay">
+      </context>
+    </contexts>
+    <itemDatas>
+      <itemData name="Normal Text"     defStyleNum="dsNormal" spellChecking="false"/>
+      <itemData name="Alerts"          defStyleNum="dsAlert" spellChecking="false"/>
+      <itemData name="BFunc"           defStyleNum="dsFunction" spellChecking="false"/>
+      <itemData name="Comment"         defStyleNum="dsComment"/>
+      <itemData name="Constant"        defStyleNum="dsKeyword" spellChecking="false"/>
+      <itemData name="Domain"          defStyleNum="dsKeyword" spellChecking="false"/>
+      <itemData name="Control"         defStyleNum="dsKeyword" color="#A1A100" selColor="#ffffff" bold="0" italic="0" spellChecking="false"/>
+      <itemData name="Error"           defStyleNum="dsError" spellChecking="false"/>
+      <itemData name="Keyword"         defStyleNum="dsKeyword" spellChecking="false"/>
+      <itemData name="Numbers"         defStyleNum="dsDecVal" spellChecking="false"/>
+      <itemData name="Strings"         defStyleNum="dsString"/>
+      <itemData name="Symbols"         defStyleNum="dsOthers" spellChecking="false"/>
+      <itemData name="Variable"        defStyleNum="dsKeyword" color="#5555FF" selColor="#ffffff" bold="0" italic="0" spellChecking="false"/>
+    </itemDatas>
+  </highlighting>
+  <general>
+    <comments>
+      <comment name="singleLine" start="//" />
+      <comment name="multiLine" start="--[[" end="]]" />
+    </comments>
+    <keywords casesensitive="1" weakDeliminator="&#46;" additionalDeliminator="&quot;"/>
+  </general>
+</language>

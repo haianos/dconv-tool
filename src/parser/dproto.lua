@@ -12,6 +12,7 @@ local ac       = require('ansicolors')
 local preproc  = require('utils').preproc
 local split    = require('utils').split
 local utf8     = require('lua-utf8')
+local mapp     = require('parser.map')
 -- inspect = require('inspect')
 
 --- for fancyerr
@@ -37,13 +38,16 @@ local function fancyerr(err)
   return str
 end
 
---[[ The same of op.lua ]]--
+--[[ The same of decl.lua ]]--
 -- this is borrowed by "titan-lang" compiler
 local function typedecl(prefix, types)
     local constructors = {}
     for typename, conss in pairs(types) do
         for consname, fields in pairs(conss) do
-            local tag = prefix .. "." .. consname
+            local tag = consname
+            if prefix then
+              tag = prefix .. "." .. consname
+            end
             constructors[consname] = function(...)
                 local args = table.pack(...)
                 if args.n ~= #fields then
@@ -67,20 +71,23 @@ local function gen_uid()
   return counter
 end
 
-local op= typedecl("Op", {
+local decl= typedecl(nil, {
   Decl = {
-    CoordNamed  = {'type','name','defs'},
-    CoordSer    = {'type','name', 'size', 'tvalue'},
-    Alias       = {'lhs', 'rhs', 'relation'},
-    Algebraic   = {'class','name','elements'},
-    View        = {'lhs','rhs','relation'},
-    Conversion  = {'from', 'to', 'fproto'},
-    Dproto      = {'name','model','semantic','coord','algebraic','ddr','dr'},
-    Dproto_comp = {'name','model','semantic','composes','dr'},
-    Fproto      = {'name','library','fname','args'},
-    DotNotation = {'sequence'},
-    -- non-geometric domain
-    JointState  = {'name','model','semantic','algebraic','ddr','dr'}
+    reference   = {'symname'},
+    anonymdef   = {'domain','content'},
+    load        = {'name'},
+    alias       = {'lhs', 'rhs', 'relation'},
+    ddr         = {'name','mmid','mid'},
+    units       = {'name','mmid','ref','map'},
+    algebraic   = {'class','name','elements'},
+    view        = {'lhs','rhs','relation'},
+    conversion  = {'from', 'to', 'fproto'},
+    dproto      = {'name','model','semantic','coord','algebraic','ddr','dr','units'},
+    dproto_comp = {'name','model','semantic','composes','dr','usingddr'},
+    fproto      = {'name','library','fname','args'},
+    dotnotation = {'sequence'},
+    -- non-geometry domain
+    jointstate  = {'name','model','semantic','algebraic','ddr','dr'}
   }
 })
 
@@ -142,7 +149,8 @@ local symbols = {
   LITERAL   = '"',
   RDIR      = '->',
   COMMA     = ",",
-  DOT       = '.' --used for scopting in CommObjectsRepository
+  DOT       = '.',
+  ALIASSYM  = '<->'
 }
 
 for i,v in pairs(symbols) do
@@ -151,7 +159,7 @@ end
 
 -- keywords and names
 local idstart = lpeg.P("_") + lpeg.R("AZ", "az")
-local idrest  = lpeg.P("_") + lpeg.R("AZ", "az", "09")
+local idrest  = lpeg.P("_") + lpeg.P("-") + lpeg.R("AZ", "az", "09")
 local possiblename = idstart * idrest^0
 local keywords = {
   'alias',
@@ -162,14 +170,15 @@ local keywords = {
   'algebraic',
   'view',
   'domain',
---   'dr',
---   'hack'
+  'load',
+  'units',
+  'composes'
 }
 
 local captured_keywords = {
 --   'fname', 'library', 'args'
   'semantic','coord', 'ddr', 'library','args','fname','Scalar','Vector','Matrix',
-  'algebraic','dr','composes'
+  'algebraic','dr', 'usingddr','units'
 }
 --- longstring and short string (for STRINGLIT) borrowed FROM TITAN
 local linebreak =
@@ -179,6 +188,7 @@ local linebreak =
     lpeg.P("\r")
 
 lexer.SPACE = lpeg.S(" \t\n\v\f\r")^1
+lexer.DELEGATE = lpeg.P{ "{" * lpeg.C(((1 - lpeg.S"{}") + lpeg.V(1))^0) * "}" }
 
 local longstring
 do
@@ -335,6 +345,15 @@ defs['Decl_Test'] = function(...)
    return args
 end
 
+defs['Decl_Anonymdef'] = function(...)
+  local args = {...}
+  return decl.anonymdef({unpack(args,1,#args-1)},args[#args])
+end
+
+defs['Decl_Reference'] = function(symval)
+ return decl.reference(symval)
+end
+
 defs['Decl_ValueField'] = function(value)
   return fieldtype.Value(value)
 end
@@ -351,15 +370,8 @@ defs['Decl_DotNotationField' ] = function(...)
  return fieldtype.DotNotation({...})
 end
 
-defs['Decl_Coord'] = function(pos,tag,name,...)
-  local args = {...}
-  -- discard tagname, captured...
-  if #args == 1 and type(args[1][1]) == 'number' then
-      local size   = args[1][1]
-      local tvalue = args[1][2]
-      return op.CoordSer('ser',name,size,tvalue)
-  end
-  return op.CoordNamed('named',name,args)
+defs['Decl_Load'] = function(libname)
+  return decl.load(libname)
 end
 
 defs['Decl_Alias'] =  function(pos,lhs,rhs,relation)
@@ -368,35 +380,128 @@ defs['Decl_Alias'] =  function(pos,lhs,rhs,relation)
 --       print(v[1].name,v[2].value)
 --       rel[v[1]] = v[2]
 --   end
---   return op.Alias(lhs,rhs,rel)
-  return op.Alias(lhs,rhs,relation)
+--   return decl.Alias(lhs,rhs,rel)
+  return decl.alias(lhs,rhs,relation)
+end
+
+defs['Decl_DDRDef'] = function(key,symname,mmid,content)
+  return decl.ddr(symname,mmid,content)
+end
+
+defs['Decl_Units'] = function(name,mmid,ref,map)
+  return decl.units(name,mmid,ref,map)
 end
 
 defs['Decl_Algebraic'] = function(pos,obj,name,...)
   local atype = {...} --algebraic type, Scalar, Vector or Matrix
 --   for i,v in pairs(atype) do print(i,v) end
-  return op.Algebraic(atype[1][1],name,atype[1][2])
+  return decl.algebraic(atype[1][1],name,atype[1][2])
 end
 
 defs['Decl_View'] = function(pos,lhs,rhs,relation)
   local lhs = lhs
   local rhs = rhs
   if type(lhs) == 'table' then
-    lhs = op.DotNotation(lhs)
+    lhs = decl.dotnotation(lhs)
   end
   if type(rhs) == 'table' then
-    rhs = op.DotNotation(rhs)
+    rhs = decl.dototation(rhs)
   end
 --   if type(relation) == 'table' then
 --     for i,v in pairs(relation[1]) do print(i,v) end
 --   end
-  return op.View(lhs,rhs, relation)
+  return decl.view(lhs,rhs, relation)
 end
 
 defs['Decl_Conversion'] = function(pos,from,to,fproto)
-  return op.Conversion(from,to,fproto)
+  return decl.conversion(from,to,fproto)
 end
 
+--[[ CONFIGURATION --]]
+-- Valid (modelled) dproto annotations
+local dpan = {
+  semantic  = 'semantic',
+  coord     = 'coord',
+  ddr       = 'ddr',
+  dr        = 'dr',
+  composes  = 'composes',
+  usingddr  = 'usingddr',
+  units     = 'units',
+  algebraic = 'algebraic'
+}
+
+-- Tagging annotation field
+local function tag_an(tag,tab)
+  if not tab._tag then -- do not override
+    tab._tag = dpan[tag]
+  end
+--   print(inspect(tab))
+  return tab
+end
+
+--[[ END CONFIGURATION --]]
+
+--[[ Specific `Solve_` implementation --]]
+defs['Solve_Units'] = function(...)
+  local args = {...}
+  local units = args[2]  -- necessary for retrocompatibility
+  if args[2]._tag == 'anonymdef' then
+    local content = mapp:match(args[2].content)
+    units = decl.units('anonymous',args[2].domain[1],args[2].domain[2],content)
+  end
+--   return 'units', units  -- This is necessary for retrocompatibility
+--   return tag_an('units',units)
+--   print('unit tag is',units._tag)
+  return {_tag='units', sval=units}
+end
+
+defs['Solve_DDR'] = function(...)
+  local args = {...}
+  if args[2]._tag == "reference" then --return 'ddr', args[2] end
+    return tag_an('ddr',args[2]) end
+  return tag_an('ddr', {mid=args[2].content, mmid = args[2].domain[1] })
+--   return 'ddr', {mid=args[2].content, mmid = args[2].domain[1] }
+end
+
+--[[ Generated `Solve_` from `dpan` for single value (sval) fields--]] 
+local function gen_solvers()
+  for i,v in pairs(dpan) do
+    local  name = 'Solve_'..v:gsub("^%l", string.upper)
+    if not defs[name] then
+      defs[name] = function(s,sval) return tag_an(s,{sval=sval}) end
+    end
+  end
+end
+
+gen_solvers()
+--  Aliases, for the sake of the poor Enea's memory (to be removed)
+defs['Solve_DR']       = defs.Solve_Dr
+defs['Solve_DDR']      = defs.Solve_Ddr
+defs['Solve_UsingDDR'] = defs.Solve_Usingddr
+
+-- defs['Solve_Semantic'] = function(s,sval)
+--   return tag_an(s,{sval=sval})
+-- --   return 'semantic', {_tag=s, sval=sval }
+-- end
+-- 
+-- defs['Solve_Coord'] = function(s,sval)
+-- --   return 'coord', {_tag=s, sval=sval }
+-- end
+-- 
+-- defs['Solve_DR'] = function(s,sval)
+--   return 'dr', {_tag=s, sval=sval }
+-- end
+-- 
+-- defs['Solve_UsingDDR'] = function(s,sval)
+--   return 'usingddr', {_tag=s, sval=sval }
+-- end
+-- 
+defs['Solve_Composes'] = function(...)
+  local args = {...}
+  args._tag = 'composes'
+--   print(inspect(args))
+  return args
+end
 
 -- This version is stateless, so better :-)
 --TODO: make gen calls structural, such that it is easy to add more
@@ -404,33 +509,54 @@ defs['Decl_Dproto'] = function(pos,name,model,...)
   local args   = {...}
   local schema = schemas[model]
   selection = 'newgeom'
+  --[[ Check schema --]]
   if schema._tag == 'oneOf' then
     ok, selection = oneof(function(s)
                         return check_schema(s,args)
                       end,schema.schema)
-    if not ok then print('schema failed') return false end
+    if not ok then print('schema failed (oneOf)') return false end
   elseif schema then
     local ok = check_schema(schema,args)
     if not ok then print('schema failed') return false end
   end
-  local fields = {}
-  for i,v in pairs(args) do
-    fields[v[1]] = {unpack(v,2)}
-  end
+--   local fields = {}
+--   for i,v in pairs(args) do
+--     fields[v[1]] = {unpack(v,2)}
+--   end
   if selection == 'newgeom' then
-    local ddr = {}
-    for i,v in pairs(fields.ddr) do ddr[v[1]] = v[2] end
-    return op.Dproto(name,model,fields.semantic[1],fields.coord[1],fields.algebraic[1],ddr,fields.dr[1])
+    ---------- parse ALGEBRAIC
+--     local alge = args.fields.algebraic[1]
+--     -----------------------------------------------------
+--     ---------- parse DDR
+--     local ddr = fields.ddr[1]
+--     -----------------------------------------------------
+--     ---------- parse UNITS
+--     local units = fields.units[1]
+--     -----------------------
+--     local coord    = fields.coord[1]
+--     local semantic = fields.semantic[1]
+--     local dr       = fields.dr[1]
+--     return decl.Dproto(name,model,semantic,coord,alge,ddr,dr,units)
+    return {_tag='dproto',name=name,model=model,...}
+    
   elseif selection == 'composed' then
     local composes = {}
-    for i,v in pairs(fields.composes) do
-      composes[v[1]] = v[2]
-    end
-    return op.Dproto_comp(name,model,fields.semantic[1],composes,fields.dr[1])
+--     print(inspect(args))
+--     print(inspect(args))
+--     for i,v in pairs(fields.composes) do
+--       composes[v[1]] = v[2]
+--     end
+--     local usingddr = false
+--     if fields.usingddr then
+--       usingddr = {}
+--       for i,v in pairs(fields.usingddr) do usingddr[v[1]] = v[2] end
+--     end
+--     return decl.dproto_comp(name,model,fields.semantic[1],composes,fields.dr[1],usingddr)
+    return { _tag='dproto_comp', name=name,model=model,...}
   elseif selection == 'jointstate' then
     local ddr = {}
     for i,v in pairs(fields.ddr) do ddr[v[1]] = v[2] end
-    return op.JointState(name,model,fields.algebraic[1],fields.semantic[1],ddr,fields.dr[1])
+    return decl.jointstate(name,model,fields.algebraic[1],fields.semantic[1],ddr,fields.dr[1])
   end
   print("shouldn't get here: "..selection.." not supported")
   return false
@@ -441,7 +567,7 @@ defs['Decl_Fproto'] = function(pos,name,content)
   for i,v in pairs(content) do
       args[v[1]] = {unpack(v,2)}
   end
-  return op.Fproto(name,args.library,args.fname,args.args)
+  return decl.fproto(name,args.library,args.fname,args.args)
 end
 
 local function check_occurrence(ulist,t)
@@ -473,7 +599,8 @@ end
 
 function oneof(fun,tab)
   for i,v in pairs(tab) do
-    if fun(v) then return true, i end end
+    if fun(v) then return true, i end
+  end
   return false
 end
 
@@ -492,7 +619,7 @@ schemas = {
       }
     }
   },
-  geometric = {
+  geometry = {
     _tag = 'oneOf',
     schema = {
      newgeom = {
@@ -501,26 +628,31 @@ schemas = {
        semantic  = 1,
        algebraic = 1,
        dr        = -1,
-       ddr       = 1
+       ddr       = 1,
+       units     = -1 -- Optional, not punitive
      },
      composed = {
        semantic = 1,
        composes = 1,
-       dr       = 1
+       dr       = 1,
+       usingddr = -1 -- optional
      }
     }
   },
-  geometric_alt = {
-    ['Op.Alias'] =  1,
-    ['Op.Conversion'] =  1
+  geometry_alt = {
+    ['Decl.Alias'] =  1,
+    ['Decl.Conversion'] =  1
   }
 }
 
-function check_schema(schema,ast)
+function check_schema(schema,parsed)
   local t = {}
-  for i,v in pairs(ast) do
-    if not t[v[1]] then t[v[1]] = 0 end
-    t[v[1]] = t[v[1]] + 1
+--   print(inspect(parsed))
+  for i,v in pairs(parsed) do
+    if not t[v._tag] then t[v._tag] = 0 end
+    t[v._tag] = t[v._tag] + 1
+--     if v._tag == 'reference' then print(inspect(v)) end
+--     if v._tag == 'ddr' then print(inspect(v)) end
   end
   -- this implementation is not ok yet
   for i,v in pairs(t) do 
@@ -556,7 +688,9 @@ end
 
 local static_grammar = 
 [[
-    program <- SKIP* {| (  coord
+    program <- SKIP* {| (  loadtag
+                          / ddrdef
+                          / unitsdef
                           / alias
                           / algebraic
                           / view
@@ -565,24 +699,41 @@ local static_grammar =
                           / fproto )* |} !.
                           
     
-    dprotostatement <- ( $(dproto_aggregate) )
+--     dprotostatement <- ( $(dproto_aggregate) )
+    
+    loadtag <- ( LOAD NAME)                                      ->Decl_Load
        
     fproto <- (P FPROTO NAME (DCOLON)? LCURLY
                              ( ( {| fprotolib / fprotofname / fprotoargs |} )^3 )^FprotoUncomplete =>check_fproto 
                               RCURLY)                            ->Decl_Fproto
                               
     dproto <- (P DPROTO NAME (DCOLON)? NAME LCURLY
-                        {| dprotostatement |} ((COMMA)? {| dprotostatement |})*
+                         dprotostatement ((COMMA)?  dprotostatement )*
                     RCURLY)                                       ->Decl_Dproto
     
-                             
-    coord  <- (P COORD NAME LCURLY ( vecdef
-                                  / (namedef)*)
-                           RCURLY)                              ->Decl_Coord
+
+    dprotostatement <- ( dprotosemantic
+                         / dprotocoord 
+                         / dprotoalgebraic 
+                         / dprotodr 
+                         / dprotoddr 
+                         / dprotocomposes 
+                         / dprotousingddr 
+                         / dprotounits )
+                         
+--     coord  <- (P COORD NAME LCURLY ( vecdef
+--                                   / (namedef)*)
+--                            RCURLY)                              ->Decl_Coord
     
-    alias  <- (P ALIAS NAME ASSIGN NAME LCURLY
+    alias  <- (P ALIAS NAME ALIASSYM NAME LCURLY
                  {| mapdef2 ( (COMMA)? mapdef2)*|}
                RCURLY)                                          ->Decl_Alias
+               
+    ddrdef <- (DDR NAME DCOLON NAME DELEGATE)                   ->Decl_DDRDef
+    
+    unitsdef <- (UNITS NAME DCOLON NAME COMMA NAME LCURLY 
+                      {| mapdef2 ( (COMMA)? mapdef2)* |} 
+                RCURLY)                                         ->Decl_Units
                
     view   <- (P VIEW ( {| namedotnot |} / NAME )
                  RDIR 
@@ -604,9 +755,6 @@ local static_grammar =
     
     conversion <- (P CONVERSION NAME RDIR NAME ASSIGN NAME)     ->Decl_Conversion
     
-    mapdef   <- ( {| NAME ASSIGN (                              -- DEPRECATED
-                              {| (VALUE) |}
-                              / (LCURLY {| VALUE (COMMA VALUE)* |} RCURLY) ) |})
                               
     mapdef2   <- ( {|  mapel ASSIGN mapel |})
                  
@@ -619,16 +767,32 @@ local static_grammar =
     namedef  <- ( {| NAME COLON NAME|})  
     vecdef   <- ( {| LBRACKET NUMBER RBRACKET COLON NAME |})   
       
-    dprotocoord     <- ( COORD    ASSIGN NAME=>check_coord_exists^CoordOptionNotValid)
-    dprotosemantic  <- ( SEMANTIC ASSIGN NAME)
-    dprotoddr       <- ( DDR      (ASSIGN)? LCURLY
+--     dprotocoord     <- ( COORD    ASSIGN NAME=>check_coord_exists^CoordOptionNotValid)
+    dprotocoord     <- ( COORD    ASSIGN NAME)                                          ->Solve_Coord
+    dprotosemantic  <- ( SEMANTIC ASSIGN NAME)                                          ->Solve_Semantic
+    dprotoddr       <- (   (DDR reference)
+                         / (DDR anonymdef) )                                            ->Solve_DDR
+                         
+    dprotoddrdep    <- ( DDR  (ASSIGN)? LCURLY
                              ( {| NAME ASSIGN STRINGLIT^ExpectedLiteral|})^2   --TODO: fields are 'mid' and 'mmid'
-                                  RCURLY )
-    dprotoalgebraic <- ( ALGEBRAIC ASSIGN NAME )
-    dprotodr        <- ( DR ASSIGN LCURLY {| mapdef2 ( (COMMA)? mapdef2)* |} RCURLY)
+                                  RCURLY )                                     --DEPRECATED!!! 
+                                  
+    dprotoalgebraic <- (   (ALGEBRAIC reference)
+                         --/ (ALGEBRAIC anonymdef) -- NYI
+                         / (ALGEBRAIC ASSIGN NAME) -- deprecated
+                       )                                                                ->Solve_Algebraic
+                       
+    dprotounits     <- ( (UNITS  reference) 
+                       / (UNITS  anonymdef) )                                           ->Solve_Units
+    dprotodr        <- ( DR ASSIGN LCURLY {| mapdef2 ( (COMMA)? mapdef2)* |} RCURLY)    ->Solve_DR
+    
     dprotocomposes  <- ( COMPOSES ASSIGN LCURLY
-                           ( {| NAME ASSIGN NAME |} ( (COMMA)? {| NAME ASSIGN NAME |})* )
+                           ( {| NAME ASSIGN NAME |} ( (COMMA)? {| NAME ASSIGN NAME |})* ) ->Solve_Composes
                             RCURLY)
+                            
+    dprotousingddr  <- ( USINGDDR (ASSIGN)? LCURLY                             --same as dprotoddr, make it better!
+                             {| ( {| NAME ASSIGN STRINGLIT^ExpectedLiteral|})^2 |}  --TODO: fields are 'mid' and 'mmid'
+                                  RCURLY )                                              ->Solve_UsingDDR
                                   
     fprotolib       <- ( LIBRARY ASSIGN STRINGLIT^ExpectedLiteral)
     fprotofname     <- ( FNAME   ASSIGN STRINGLIT^ExpectedLiteral)
@@ -640,6 +804,10 @@ local static_grammar =
                                  /  %{OUTARROW} NAME ) |})
 
     namedotnot      <- ( NAME (DOT NAME)^1 )
+    
+    -- Commonly used
+    reference       <- (ASSIGN NAME)                                                      ->Decl_Reference
+    anonymdef       <- (ASSIGN DCOLON NAME (COMMA NAME)* DELEGATE)                        ->Decl_Anonymdef
     
     -- definition of dot notation in dr, to allow tree traversal of inner datastructs
     drdotnot        <- ( (NAME /IDNUM) (DOT (NAME /IDNUM))^1 (DOT (NAME /IDNUM))* )       ->Decl_DotNotationField
@@ -661,6 +829,7 @@ local static_grammar =
     DCOLON                <- %DCOLON       SKIP*
     SEMICOLON             <- %SEMICOLON    SKIP*
     DOT                   <- %DOT          SKIP*
+    ALIASSYM              <- %ALIASSYM     SKIP*
     COMMA                 <- %COMMA        SKIP*
     ASSIGN                <- %ASSIGN       SKIP*
     RARROW                <- %RARROW       SKIP*
@@ -671,7 +840,9 @@ local static_grammar =
     COORD                 <- %COORD        SKIP*
     ALGEBRAIC             <- %ALGEBRAIC    SKIP*
     ALIAS                 <- %ALIAS        SKIP*
+    LOAD                  <- %LOAD         SKIP*
     VIEW                  <- %VIEW         SKIP*
+    UNITS                 <- %UNITS        SKIP*
     DOMAIN                <- %DOMAIN       SKIP*
     DPROTO                <- %DPROTO       SKIP*
     FPROTO                <- %FPROTO       SKIP*
@@ -679,6 +850,7 @@ local static_grammar =
     DDR                   <- %DDR          SKIP*
     DR                    <- %DR           SKIP*
     COMPOSES              <- %COMPOSES     SKIP*
+    USINGDDR              <- %USINGDDR     SKIP*
     FNAME                 <- %FNAME        SKIP*
     LIBRARY               <- %LIBRARY      SKIP*
     ARGS                  <- %ARGS         SKIP*
@@ -691,16 +863,18 @@ local static_grammar =
     VNUMBER               <- %VNUMBER      SKIP*
     IDNUM                 <- %IDNUM        SKIP*
     STRINGLIT             <- %STRINGLIT    SKIP*
+    DELEGATE              <- %DELEGATE     SKIP*
 ]]
 
 --[[ Configure the static grammar with config/composable schema elements--]]
 function gen_grammar(static_grammar)
-  dprotofields = {'dprotosemantic','dprotocoord','dprotoalgebraic','dprotodr','dprotoddr','dprotocomposes'}
-  local ok, dyn = preproc(static_grammar,
-    {table=table,
-     dproto_aggregate=table.concat(dprotofields,'/')})
-  if not ok then error(dyn) end
-  return dyn
+--   dprotofields = {'dprotosemantic','dprotocoord','dprotoalgebraic','dprotodr','dprotoddr','dprotocomposes','dprotousingddr','dprotounits'}
+--   local ok, dyn = preproc(static_grammar,
+--     {table=table,
+--      dproto_aggregate=table.concat(dprotofields,'/')})
+--   if not ok then error(dyn) end
+--   return dyn
+  return static_grammar
 end
 
 local dynamic_grammar = gen_grammar(static_grammar)
@@ -747,5 +921,6 @@ end
 -- print(inspect(defs))
 
 -- ret, err = parser.parse_file('dmodelsimple.test')
+-- print(inspect(mapp:match('x=2,y=Z')))
 
 return parser
