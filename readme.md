@@ -1,9 +1,8 @@
-# dconv-tool
+# DCONV-TOOL
 
-Automatic datatype conversion generation tool based on dproto models.
+An automatic datatype conversion generation tool based on dproto models.
 
-
-## What it does
+## What is it?
 
 `dconv` is an automatic data conversion tool that support both static code generation (`C/C++` target)
 and dynamic runtime conversion, from semantic annotations, called `dproto` models.
@@ -20,20 +19,26 @@ Please see folder `busted` and `examples` for further hints.
 ## RUNTIME Example
 
 Embedding the runtime is rather straighforward. An example with `ROS` (`rclc`) can be found here
-[dconv-rclc-example](https://github.com/haianos/dconv-rclc-example)
+[dconv-rclc-example](https://github.com/haianos/dconv-rclc-example).
+Moreover, it is possible to build a docker image from the [dockerfile](docker/Dockerfile)
+in the `docker` subfolder of this project. The image alleviates the pain of solving
+the dependencies to try out the software, especially the runtime engine of `dconv`.
+Instructions can be found in [instructions.md](docker/instructions.md)
 
-## Current supported IDLs:
+## Current supported `ddr` (or existing IDL)s:
 
-  * `ASN1`
-  * `c99`, c99 datatypes definitions (only partial for the time being);
-  * `Eigen` datatypes 
-  
-## Coming up support:
+The following table shows the current status of the supported `ddr`:
 
-  * `ROS-IDL`: currently on runtime-only, example in [dconv-rclc-example](https://github.com/haianos/dconv-rclc-example)
-  * `SmartSoft Communication Object`
+|             DDR              |  Static | Dynamic  | 
+|------------------------------|---------|----------|
+| ASN1                         |    X    |    -     |
+| c99                          |    X    |    X     |
+| Eigen                        |    X    |    -     |
+| ROS2-rclc                    |    -    |    X     |
+| SmartSoftCommunicationObject |    -    |    X     |
 
-## Prerequisites and installation
+
+## Manual installation (no docker container)
 
 A `Lua` interpreter (tested on `Lua5.2`) and `luarocks` tool to ease 
 process.
