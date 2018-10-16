@@ -31,7 +31,7 @@ The sources of this test can be found at [https://github.com/haianos/dconv-rclc-
 
 To try this out, jump to the subfolder `/home/user/rosws/src/dconv-rclc-example/dconv_rclc_example/script` and execute:
 ```
-subme datamode.dproto init-dconv.lua &
+subme datamodel.dproto init-dconv.lua &
 publishme &
 ```
 The expected output is two-line printouts each second, that looks like:
