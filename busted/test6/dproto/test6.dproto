@@ -1,0 +1,89 @@
+//ddr definitions
+ddr eigen_v31 :: Eigen{Matrix<3,1>}
+ddr eigen_m33 :: Eigen{Matrix<3,3>}
+
+//Algebraic definitions
+algebraic position3_named :: Scalar{x,y,z}
+algebraic orient_rot_mx   :: Matrix{3,3}
+algebraic quat_named      :: Scalar{x,y,z,w}
+
+// Position
+dproto kul_position :: geometry {
+  semantic  = Position
+  coord     = cartesian
+  algebraic = position3_named
+  ddr       = eigen_v31
+  dr = {
+    {0,0} = x, {1,0} = y, {2,0} = z
+  }
+}
+
+dproto Base_Position :: geometry {
+  semantic  = Position
+  coord     = cartesian
+  algebraic = position3_named
+  ddr       = :: ASN1 {Base-Types.Wrappers-Vector3d}
+  dr = {0=x, 1=y, 2=z}
+}
+
+
+// Orientation
+dproto kul_rotation :: geometry {
+  semantic  = Orientation
+  coord     = rot_matrix
+  algebraic = orient_rot_mx
+  ddr       = eigen_m33
+  dr = {
+    {0,0} = {0,0}, {0,1} = {0,1}, {0,2} = {0,2},
+    {1,0} = {1,0}, {1,1} = {1,1}, {1,2} = {1,2},
+    {2,0} = {2,0}, {2,1} = {2,1}, {2,2} = {2,2}
+  }
+}
+
+dproto Base_Rotation :: geometry {
+  semantic   = Orientation
+  coord      = rot_matrix
+  algebraic  = orient_rot_mx
+  ddr        = :: ASN1 {Base-Types.Wrappers-Matrix3d}
+  dr = {
+    0 = {0,0}, 1 = {0,1}, 2 = {0,2},
+    3 = {1,0}, 4 = {1,1}, 5 = {1,2},
+    6 = {2,0}, 7 = {2,1}, 8 = {2,2} 
+  }
+}
+
+dproto Base_Quaternion :: geometry {
+  semantic   = Orientation
+  coord      = quaternion
+  algebraic  = quat_named
+  ddr        = :: ASN1 {Base-Types.Quaterniond}
+  dr = {re=w, im.0=x, im.1=y, im.2=z}
+}
+
+conversion Base_Quaternion -> kul_rotation     = quat2rot
+conversion kul_rotation    -> Base_Quaternion  = rot2quat
+
+// Pose definitions
+dproto Base_Pose :: geometry {
+  semantic = Pose
+  composes = {
+    Position    = Base_Position
+    Orientation = Base_Quaternion
+  }
+  dr = {
+    orientation = Orientation
+    position    = Position
+  }
+}
+
+dproto kul_pose :: geometry {
+  semantic = Pose
+  composes  = {
+    Position    = kul_position
+    Orientation = kul_rotation
+  }
+  dr = {
+    position    = Position
+    orientation = Orientation
+  }
+}

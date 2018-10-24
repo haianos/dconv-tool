@@ -34,6 +34,7 @@ Enea Scioni, <enea.scioni@kuleuven.be>
       <item> c99   </item>
       <item> Eigen </item>
       <item> qudt  </item>
+      <item> SMDSD </item>
     </list>
     <list name="basefunc">
       <item> usingddr </item> 

@@ -12,6 +12,7 @@ local dparser = require('parser.dproto') --needed for utils
 local eigen   = require('parser.eigen')
 local asnctx = {}
 local asnr   = require('asn1runtime')(asnctx)
+local smdsdctx = {_defined={}}
 
 --[[ Internal state of the tool --]]
 -- Accessor provided by utility functions
@@ -253,6 +254,13 @@ local function init_runtime(dprotofile,ddr_models)
     rgen = require('ros.rclc-gen')
   end
   
+  if ddr_models.smdsd_files then
+     smdsd = require('smdsdruntime')(smdsdctx)
+     ok, err = smdsd.init_runtime(ddr_models.smdsd_files)
+     if not ok then return false, err end
+     smdsd.enableffi(true)
+  end
+  
   for i,v in pairs(parsed) do                                       --DEVNOTE: make it structural
 --   print(i,v)
     if v._tag == 'algebraic' then algebraic[v.name] = v end
@@ -358,6 +366,11 @@ local function asn1_api_getset(p)
     return 'dblx<'..p.dproto.name..'>: ASN1 '..tostring(p.dblx)
   end
   
+  local get_asntype = function(mid)
+    local args = utils.split(mid,'%.')
+    return asnr.get_def(args[1],args[2])
+  end
+  
   if p.dproto.algebraic then
     class = algebraic[p.dproto.algebraic].class
     if class == 'Scalar' then
@@ -366,6 +379,20 @@ local function asn1_api_getset(p)
          __tostring = __tostring
        }
        setmetatable(p,mt)
+    elseif  class == 'Vector' then
+      print('WARNING, ASN1::Vector NYI')
+    elseif  class == 'Matrix' then
+      local mt = { __tostring = __tostring }
+      local mid = p.dproto.ddr.mid
+      local asntype = get_asntype(mid)
+      if asnr.is_sequence(asntype) then
+        mt.__call    = function(t,k1,k2)
+          return '['..p.dproto._map_a2ddr[k1][k2]..']'
+         end
+      end --other cases NYI
+      setmetatable(p,mt)
+    else
+      print('ERROR, ASN1:: UNKNOWN algebraic!')
     end
   end
 end
@@ -736,6 +763,17 @@ local function set_mmid_ros(p)
   set_generic_dyn_api(p,'ROS')
 end
 
+local function set_mmid_smdsd(p)
+  local nametype   =  utils.split(p.dproto.ddr.mid,'%.')
+  local repo       = nametype[1]
+  local objname    = nametype[2]
+  smdsd.gen_all_c99(repo,objname)
+  local ok, data = pcall(ffi.new,'SMDSD_'..objname,init)
+  if not ok then error('allocation issues: '..data) end
+  p.dblx = data
+  set_generic_dyn_api(p,'SMDSD')
+end
+
 local gen_ctypename = {
   ROS = function(...) return rgen.gen_typename(...) end,
   c99 = function(mid) return mid end
@@ -794,8 +832,9 @@ local function getraw(d)
 end
 
 local ddblx_mmid_support = {
-  c99 = set_mmid_c99,
-  ROS = set_mmid_ros
+  c99   = set_mmid_c99,
+  ROS   = set_mmid_ros,
+  SMDSD = set_mmid_smdsd
 }
 
 local function DDBLX(dproto)
@@ -1269,6 +1308,8 @@ local function convert_sdblx(m1name,m2name)
         end
       end
     elseif alg.class == 'Matrix' then
+--                         inspect=require('inspect')
+--                         print(inspect(m1))
       return function(fd,rhsname,lhsname,idx)
         for i=0,alg.elements[2]-1 do
           for j=0,alg.elements[2]-1 do
@@ -1413,6 +1454,7 @@ local function convert_ddblx(src,tgt)
   
   return false, 'Some corner cases not handled yet in this implementation'
 end
+                        
 
 --[[ Dispatcher for converting functions --]]
 local function convert(src,tgt)

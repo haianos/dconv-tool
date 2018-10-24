@@ -1,0 +1,102 @@
+// DPROTO MODULE DEFINITIONS FOR TEST6
+// Dproto used in ilk-compiler
+// Author: Enea Scioni, <enea.scioni@kuleuven.be>
+// 2018, KU Leuven, Belgium
+
+// -- Algebraic definitions --
+
+// --  -- Positions -- --
+algebraic position2 :: Vector{2}
+algebraic position3 :: Vector{3}
+algebraic position3_named :: Scalar{x,y,z}
+
+// --  -- Orientation -- --
+algebraic quat :: Vector{4}
+algebraic quat_named :: Scalar{x,y,z,w}
+algebraic orient_rot_mx :: Matrix{3,3}
+algebraic orient_rot_named :: Scalar{Xx,Xy,Xz,Yx,Yy,Yz,Zx,Zy,Zz}
+
+// -- -- Pose -- --
+algebraic ht_matrix :: Matrix{4,4}
+
+//ddr definitions
+ddr eigen_v4d  :: Eigen{Vector4d}
+ddr eigen_m33  :: Eigen{Matrix<3,3>}
+ddr eigen_v31  :: Eigen{Matrix<3,1>}
+
+dproto Base_Position :: geometry {
+  semantic  = Position
+  coord     = cartesian
+  algebraic = position3_named
+  ddr       = :: ASN1 {Base-Types.Wrappers-Vector3d}
+  dr = {0=x, 1=y, 2=z}
+}
+
+dproto Base_Quaternion :: geometry {
+  semantic  = Orientation
+  coord     = quaternion
+  algebraic = quat_named
+  ddr       = :: ASN1 {Base-Types.Wrappers-Quaterniond}
+  dr = {re=w, im.0=x, im.1=y, im.2=z}
+}
+
+dproto Base_Pose :: geometry {
+  semantic = Pose
+  composes = {
+    Position    = Base_Position
+    Orientation = Base_Quaternion
+  }
+  dr = {
+    orientation = Orientation
+    position    = Position
+  }
+}
+
+dproto kul_position :: geometry {
+  semantic  = Position
+  coord     = cartesian
+  algebraic = position3_named
+  ddr       = eigen_v31
+  dr = {
+    {0,0} = x, {1,0} = y, {2,0} = z
+  }
+}
+
+dproto kul_rotation :: geometry {
+  semantic  = Orientation
+  coord     = rot_matrix
+  algebraic = orient_rot_mx
+  ddr       = eigen_m33
+  dr = {
+    {0,0} = {0,0}, {0,1} = {0,1}, {0,2} = {0,2},
+    {1,0} = {1,0}, {1,1} = {1,1}, {1,2} = {1,2},
+    {2,0} = {2,0}, {2,1} = {2,1}, {2,2} = {2,2}
+  }
+}
+
+
+dproto kul_pose :: geometry {
+  semantic  = Pose
+  coord     = homogeneous_transformation
+  algebraic = ht_matrix
+  ddr       = :: Eigen{Matrix<4,4>}
+  dr = {
+    {0,0} = {0,0}, {0,1} = {0,1}, {0,2} = {0,2}, {0,3} = {0,3},
+    {1,0} = {1,0}, {1,1} = {1,1}, {1,2} = {1,2}, {1,3} = {1,3},
+    {2,0} = {2,0}, {2,1} = {2,1}, {2,2} = {2,2}, {2,3} = {2,3},
+    {3,0} = {3,0}, {3,1} = {3,1}, {3,2} = {3,2}, {3,3} = {3,3}
+  }
+}
+
+dproto kul_pose2 :: geometry {
+  semantic = Pose
+  composes  = {
+    Position    = kul_position
+    Orientation = kul_rotation
+  }
+  dr = {
+    position    = Position
+    orientation = Orientation
+  }
+}
+
