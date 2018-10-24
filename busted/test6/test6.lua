@@ -81,11 +81,11 @@ rhs(2,2) = lhs[8];
     c, err = dconv.convert('Base_Pose','kul_pose')
     if not c then print(err) end
     str = dconv.CaptureOutput()
-    c(str,'lhs','rhs')
-    assert.equal([[quat2rot(lhsorientation.,rhsorientation);
-rhsposition(0,0) = lhsposition.data.arr[0];
-rhsposition(1,0) = lhsposition.data.arr[1];
-rhsposition(2,0) = lhsposition.data.arr[2];
+    c(str,'lhs.','rhs.')
+    assert.equal([[quat2rot(lhs.orientation,rhs.orientation);
+rhs.position(0,0) = lhs.position.data.arr[0];
+rhs.position(1,0) = lhs.position.data.arr[1];
+rhs.position(2,0) = lhs.position.data.arr[2];
 ]],tostring(str))
   end)
 

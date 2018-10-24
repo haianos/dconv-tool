@@ -998,6 +998,15 @@ end
 local fblx_call = function(fnc,fd,rhsname,lhsname,idx)
   local fd  = fd or io.stdout
   local idx = idx or 0
+  --remove accessor to last if present
+  local rhsname = rhsname
+  if rhsname:sub(-1) == '.' or rhsname:sub(-1) == '>' then
+    rhsname = rhsname:sub(1,-2)
+  end
+  local lhsname = lhsname
+  if lhsname:sub(-1) == '.' or rhsname:sub(-1) == '>' then
+    lhsname = lhsname:sub(1,-2)
+  end
   local ok, res = utils.preproc([[
 $(space)$(fnc)($(rhsname),$(lhsname));
 ]],
