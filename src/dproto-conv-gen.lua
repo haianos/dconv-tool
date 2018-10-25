@@ -1004,7 +1004,7 @@ local fblx_call = function(fnc,fd,rhsname,lhsname,idx)
     rhsname = rhsname:sub(1,-2)
   end
   local lhsname = lhsname
-  if lhsname:sub(-1) == '.' or rhsname:sub(-1) == '>' then
+  if lhsname:sub(-1) == '.' or lhsname:sub(-1) == '>' then
     lhsname = lhsname:sub(1,-2)
   end
   local ok, res = utils.preproc([[
