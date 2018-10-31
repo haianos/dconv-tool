@@ -1192,7 +1192,7 @@ end
 -- @return:
 --  * conversion fails <false,errmsg>
 --  * conversion succeed <fnc,state>
-local function convert_sdblx(m1name,m2name)
+local function convert_sdblx(m1name,m2name,opt)
   local p1 = dproto[m1name] or false
   local p2 = dproto[m2name]
   if (not p1) or (not p2) then
@@ -1248,10 +1248,31 @@ local function convert_sdblx(m1name,m2name)
           local d2mmid = find_dproto(c2[s]).ddr.mmid
           local lhssym = accessor_symbol.inner[d1mmid].simple or '.'
           local rhssym = accessor_symbol.inner[d2mmid].simple or '.'
-          local gen, err = convert_sdblx(dname,c2[s])
+                        inspect=require('inspect')
+          if opt and opt[m1name] then 
+            if opt[m1name].dr_accessor and opt[m1name].dr_accessor[n1] then
+              local custom_accessor = opt[m1name].dr_accessor[n1]
+              if custom_accessor.fnc then
+                n1 = custom_accessor.value..'('..n1..')'
+              else
+                n1 = custom_accessor.value
+              end
+            end
+          end
+          if opt and opt[m2name] then 
+            if opt[m2name].dr_accessor and opt[m2name].dr_accessor[n2] then
+              local custom_accessor = opt[m2name].dr_accessor[n2]
+              if custom_accessor.fnc then
+                n2 = custom_accessor.value..'('..n2..')'
+              else
+                n2 = custom_accessor.value
+              end
+            end
+          end
+          local gen, err = convert_sdblx(dname,c2[s],opt)
           gen(fd,rhsname..n1..lhssym,lhsname..n2..rhssym)
         else
-          local gen, err = convert_sdblx(dname,c2[s])
+          local gen, err = convert_sdblx(dname,c2[s],opt)
           local n1 = find_keyname(m1.dproto.dr,s)
           local n2 = find_keyname(m2.dproto.dr,s)
           gen(fd,rhsname..n1..'.',lhsname..n2..'.')
@@ -1466,9 +1487,9 @@ end
                         
 
 --[[ Dispatcher for converting functions --]]
-local function convert(src,tgt)
+local function convert(src,tgt,opt)
   if type(src) == 'string' and type(tgt) == 'string' then
-    return convert_sdblx(src,tgt)
+    return convert_sdblx(src,tgt,opt)
   end
   
   if src._tag == 'dblx' and tgt._tag == 'dblx' then

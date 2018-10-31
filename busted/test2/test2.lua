@@ -204,5 +204,31 @@ lhs.foo.position.data.arr[0] = rhs.o2.position(0,0);
 lhs.foo.position.data.arr[1] = rhs.o2.position(1,0);
 lhs.foo.position.data.arr[2] = rhs.o2.position(2,0);
 ]],tostring(str))
-  end)  
+  end)
+  
+  it('convert Base_Pose to kul_pose2 (custom accessor of composite)',function()
+    assert.has.no_errors(function()
+      local custom_opt = { kul_pose2 = {
+          dr_accessor = { 
+            orientation = { fnc=true, value = 'kul::eg_get_rotation' },
+            position    = { fnc=true, value = 'kul::eg_get_position' }
+          }
+        }
+      }
+      gen, err = dconv.convert('Base_Pose','kul_pose2',custom_opt)
+      if not gen then return error(err); end
+      str = dconv.CaptureOutput()
+      gen(str,'rhs.','')
+    end)
+--     print(tostring(str))
+    assert.equal([[kul::eg_get_rotation(orientation)(0) = rhs.orientation.im.arr[0];
+kul::eg_get_rotation(orientation)(1) = rhs.orientation.im.arr[1];
+kul::eg_get_rotation(orientation)(2) = rhs.orientation.im.arr[2];
+kul::eg_get_rotation(orientation)(3) = rhs.orientation.re;
+kul::eg_get_position(position)(0,0) = rhs.position.data.arr[0];
+kul::eg_get_position(position)(1,0) = rhs.position.data.arr[1];
+kul::eg_get_position(position)(2,0) = rhs.position.data.arr[2];
+]],tostring(str))
+  end)
+  
 end)
